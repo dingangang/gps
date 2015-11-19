@@ -1,5 +1,7 @@
 #usr/bin/python
 #coding=utf-8
+
+from database import *
 class gpsTime_Location():
     '用于计算网格中停留时间。。'
     def __init__(self):
@@ -7,14 +9,14 @@ class gpsTime_Location():
             x,y的递增可以根据实际选定的区间范围来进行调整'''
         self.temp = ()
         self.times = {(x, y):0 for x in range(1, 101) for y in range(1, 101)}
-        self.pos_longitude = dict(zip([round(112.09 + y*(0.23/100.0),4)  for y in range(0,100)]
+        self.pos_longitude = dict(zip([round(112.9 + y/1000.0,3)  for y in range(0,200,2)]
                                    ,[x for x in range(1,101)]))
-        self.pos_latitude = dict(zip([round(28.09 + x*(0.18/100.0),4)  for x in range(0,100)]
+        self.pos_latitude = dict(zip([round(28.07 + x/1000.0,3)  for x in range(0,200,2)]
                                    ,[y for y in range(1,101)]))
 
     def loop_location(self,data):
-        '''data(latitude,longitude,localtime,speed)\
-        data(pos_longitude,pos_latitude,local_time,move_speed)
+        '''
+        data(pos_longitude,pos_latitude,local_time,move_speed,vehicle_id)
         每次接受一条信息，与temp进行比较并且进行计算'''
         if data:
             if self.inlocation(data):
@@ -22,7 +24,6 @@ class gpsTime_Location():
                     self.temp = data
                 elif data[3] == 0:
                     if self.matrix(self.temp) == self.matrix(data): #矩阵内坐标相等
-                        print self.matrix(data)
                         self.write_time(self.matrix(data),
                                         self.counttime(self.temp,data)) #计算两者时间差并写入到计数字典
                         self.temp = data
@@ -30,28 +31,26 @@ class gpsTime_Location():
                     self.temp = ()
 
     def standare(self,data):
-        '将数据化成4位小数便于计算'
-        data = round(data,4)
-        if data*10000%2 == 0:
+        '将数据化成3位小数便于计算'
+        data = round(data,3)
+        if data*1000%2 == 0:
             return data
         else:
-            return round(data-0.001,2)
+            return round(data-0.001,3)
 
     def inlocation(self, data):
         '判断位置是否在所限定范围内'
         temp_pos_longitude = self.standare(data[0])
         temp_pos_latitude = self.standare(data[1])
-        if 112.09 <= temp_pos_longitude <= 112.32 and 28.09 <= temp_pos_latitude <= 28.27: #此处根据实际给定网格边缘定义
+        if 112.90 < temp_pos_longitude < 113.10 and 28.07 < temp_pos_latitude < 28.27: #此处根据实际给定网格边缘定义
             return True
         else:
             return False
 
     def matrix(self, data):
         '得到矩阵times内的坐标'
-        tempx = int((data[0]-112.09)*10000/23)+1
-        tempy = int((data[1]-28.09)*10000/18)+1
-
-        print tempx,tempy
+        tempx = self.pos_longitude[self.standare(data[0])]
+        tempy = self.pos_latitude[self.standare(data[1])]
         return (tempx,tempy)
 
 
@@ -73,12 +72,29 @@ class gpsTime_Location():
                     str1 = str(id)+','+str(data)+','+str(self.times[data])
                     f.write(str1+'\n')
             f.close()
+            self.times = {(x, y):0 for x in range(1, 101) for y in range(1, 101)} #重置字典
         except IOError as err:
             print 'file err'
 
 
-    def printt(self):
-        print 'just a print test'
-        print 'another test'
+
+
+
+if __name__ == '__main__':
+    gps = gpsTime_Location()
+    f = open('v_id.txt','r')
+    for i in f.readlines():
+
+        sql = 'select pos_longitude,pos_latitude,local_time,move_speed,vehicle_id from gps_temp ' \
+              'where vehicle_id = %s'% i
+        print sql
+        db = DB(sql)
+        while db.next:
+            gps.loop_location(db.DBget())
+        gps.write_into_file(i.strip('\n'))
+        db.closeDB()
+
+
+
 
 
