@@ -1,7 +1,7 @@
 # usr/bin/python
 # coding=utf-8
 import MySQLdb
-
+import time
 
 class DB():
     """连接数据库操作"""
@@ -79,9 +79,10 @@ class gpsTime_Location():
 
     def matrix(self, data):
         """得到矩阵内的坐标"""
-        tempx = self.pos_longitude[self.standare(data[0])]
-        tempy = self.pos_latitude[self.standare(data[1])]
-        return (tempx, tempy)
+        return (round(self.standare(data[0]-112.90)/0.002),round(self.standare(data[1]-28.07)/0.002))
+        # tempx = self.pos_longitude[self.standare(data[0])]
+        # tempy = self.pos_latitude[self.standare(data[1])]
+        # return (tempx, tempy)
 
     def counttime(self, data1, data2):
         """计算停留时间"""
@@ -107,15 +108,17 @@ class gpsTime_Location():
 
 if __name__ == '__main__':
     # 主程序入口
+    time_before = time.time()
     gps = gpsTime_Location()
     f = open('v_id.txt', 'r')  # v_id中存好了车辆ID
     for i in f.readlines():
         sql = 'select pos_longitude,pos_latitude,local_time,move_speed,vehicle_id from gps_temp ' \
-              'where vehicle_id = %s' % i
-        print sql
+              'where vehicle_id = %s order by local_time' % i
+        print 'counting vehicle_id = ',i
         db = DB(sql)
         while db.next:
             gps.loop_location(db.dataget())  # 循环计算时间
         gps.write_into_file(i.strip('\n'))  # 计数字典和ID写入文件
         db.closeDB()
-    print 'loop end !'
+    time_after = time.time()
+    print 'loop end ! use time:%s hours' % str((time_after-time_before)/3600)

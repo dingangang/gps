@@ -111,8 +111,8 @@ if __name__ == '__main__':
     f = open('v_id.txt', 'r')  # v_id中存好了车辆ID
     for i in f.readlines():
         sql = 'select pos_longitude,pos_latitude,local_time,move_speed,vehicle_id from gps_temp ' \
-              'where vehicle_id = %s' % i
-        print sql
+              'where vehicle_id = %s order by local_time' % i
+        print 'counting vehicle = %s' % i
         db = DB(sql)
         while db.next:
             gps.loop_location(db.dataget())  # 循环计算时间
