@@ -3,6 +3,9 @@
 import MySQLdb
 import time
 
+import datetime
+
+
 class DB():
     """连接数据库操作"""
 
@@ -108,17 +111,53 @@ class gpsTime_Location():
 
 if __name__ == '__main__':
     # 主程序入口
+    # time_before = time.time()
+    # gps = gpsTime_Location()
+    # f = open('v_id.txt', 'r')  # v_id中存好了车辆ID
+    # for i in f.readlines():
+    #     sql = 'select pos_longitude,pos_latitude,local_time,move_speed,vehicle_id from gps_temp ' \
+    #           'where vehicle_id = %s order by local_time' % i
+    #     print 'counting vehicle_id = ',i
+    #     db = DB(sql)
+    #     while db.next:
+    #         gps.loop_location(db.dataget())  # 循环计算时间
+    #     gps.write_into_file(i.strip('\n'))  # 计数字典和ID写入文件
+    #     db.closeDB()
+    # time_after = time.time()
+    # print 'loop end ! use time:%s hours' % str((time_after-time_before)/3600)
+
+    # 从数据库读取并进行循环 时间为4.9S
     time_before = time.time()
+    print time.time()
     gps = gpsTime_Location()
-    f = open('v_id.txt', 'r')  # v_id中存好了车辆ID
-    for i in f.readlines():
-        sql = 'select pos_longitude,pos_latitude,local_time,move_speed,vehicle_id from gps_temp ' \
-              'where vehicle_id = %s order by local_time' % i
-        print 'counting vehicle_id = ',i
-        db = DB(sql)
-        while db.next:
-            gps.loop_location(db.dataget())  # 循环计算时间
-        gps.write_into_file(i.strip('\n'))  # 计数字典和ID写入文件
-        db.closeDB()
+    #f = open('v_id.txt', 'r')  # v_id中存好了车辆ID
+    #for i in f.readlines():
+    sql = 'select pos_longitude,pos_latitude,local_time,move_speed,vehicle_id from gps_temp ' \
+          'where vehicle_id = 100663297 order by local_time'
+    print 'counting vehicle_id = 100663297'
+    print time.time()
+    db = DB(sql)
+    while db.next:
+        gps.loop_location(db.dataget())  # 循环计算时间
+    gps.write_into_file('100663297')  # 计数字典和ID写入文件
+    print time.time()
+    db.closeDB()
     time_after = time.time()
-    print 'loop end ! use time:%s hours' % str((time_after-time_before)/3600)
+    print 'loop end ! use time:%s seconds' % str(time_after-time_before)
+
+
+    print '_______________________________________________________'
+    #从文件来进行读取时间为?   相关的数据已经放在了temp.txt中 明天先把时间算出来，然后再选定以后的计算方式。
+
+    time_before = time.time()
+    print time.time()
+    f = open('test.txt','r')
+    for line in f.readlines():
+        data = line.split(',')
+        temp = (float(data[0]),float(data[1]),
+                datetime.datetime.strptime(data[2],"%Y-%m-%d %H:%M:%S"),float(data[3]))
+        gps.loop_location(temp)  # 循环计算时间
+    gps.write_into_file('100663297')  # 计数字典和ID写入文件
+    time_after = time.time()
+    print 'io modouls  use time:%s seconds' %str(time_after-time_before)
+
